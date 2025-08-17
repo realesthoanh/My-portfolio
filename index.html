@@ -23,9 +23,9 @@
   <main id="top">
     <section class="hero container">
       <h1>Welcome, im <span class="accent">Huang</span></h1>
-      <p>Front-end / Mobile learner.</p>
+      <p>Front-end / Mobile learner. </p>
       <div class="cta">
-        <a class="btn" href="#projects">Projects</a>
+        <a class="btn" href="#projects">Projects:</a>
         <a class="btn ghost" href="mailto:hnglee1111@gmail.com">Contact Email</a>
       </div>
     </section>
@@ -46,7 +46,7 @@
       <div class="grid">
         <article class="card">
           <h3>Project Skibidi</h3>
-          <p>Nah nothing yet</p>
+          <p> Nah nothing yet </p>
           <div class="card-actions">
             <a class="btn tiny" href="#">Demo</a>
             <a class="btn tiny ghost" href="#">Source</a>
@@ -80,29 +80,90 @@
     </div>
   </footer>
 
-  <!-- 🎵 Nút bật nhạc nền -->
+  <!-- ====== 🎵 YouTube Background Music (with Play/Pause) ====== -->
+  <!-- Nút nổi bật nhạc – không ảnh hưởng UI cũ -->
   <button id="playBtn" class="btn" style="position:fixed;bottom:20px;right:20px;z-index:1000;">
     ▶ Play Music
   </button>
 
-  <!-- 🎵 Nhạc nền (upload file music.mp3 cùng repo) -->
-  <audio id="bg-music" loop>
-    <source src="music.mp3" type="audio/mpeg">
-  </audio>
+  <!-- Khung player ẩn (YouTube yêu cầu phải có iframe) -->
+  <div id="yt-holder" style="position:fixed;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;">
+    <div id="ytplayer"></div>
+  </div>
 
+  <!-- Script cũ của bạn (menu, năm, v.v.) -->
   <script src="script.js"></script>
+
+  <!-- IFrame Player API của YouTube -->
   <script>
-    // Nút Play để tránh lỗi autoplay bị chặn
-    const btn = document.getElementById("playBtn");
-    const music = document.getElementById("bg-music");
-
-    btn.addEventListener("click", () => {
-      music.play();
-      btn.style.display = "none"; // ẩn nút sau khi bấm
-    });
-
     // Tự động update năm hiện tại
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Tải YouTube IFrame API
+    (function loadYT() {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    })();
+
+    let player;           // YouTube player instance
+    let isPlaying = false;
+
+    // Hàm YouTube API gọi khi đã sẵn sàng
+    function onYouTubeIframeAPIReady() {
+      // Khởi tạo player nhưng không autoplay đến khi user bấm nút
+      player = new YT.Player('ytplayer', {
+        width: '0',
+        height: '0',
+        videoId: '0-7IHOXkiV8', // ID từ link của bạn
+        playerVars: {
+          autoplay: 0,      // sẽ play bằng click để tránh chặn
+          controls: 0,      // ẩn controls
+          loop: 1,          // lặp
+          playlist: '0-7IHOXkiV8', // cần để loop hoạt động
+          modestbranding: 1,
+          rel: 0,
+          fs: 0,
+          playsinline: 1     // phát inline trên iOS
+        },
+        events: {
+          'onReady': function() {
+            // chờ user click
+          },
+          'onStateChange': function(e) {
+            // Cập nhật trạng thái nút theo state player
+            // 1 = PLAYING, 2 = PAUSED/ENDED
+            if (e.data === YT.PlayerState.PLAYING) {
+              isPlaying = true;
+              updateBtn(true);
+            } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+              isPlaying = false;
+              updateBtn(false);
+            }
+          }
+        }
+      });
+    }
+
+    const btn = document.getElementById('playBtn');
+
+    function updateBtn(playing) {
+      btn.textContent = playing ? '⏸ Pause Music' : '▶ Play Music';
+    }
+
+    // Click để bật/tắt nhạc – đảm bảo hoạt động trên mobile
+    btn.addEventListener('click', function() {
+      if (!player) return; // API chưa sẵn sàng
+      try {
+        if (!isPlaying) {
+          player.playVideo();   // phát
+        } else {
+          player.pauseVideo();  // tạm dừng
+        }
+      } catch (err) {
+        console.log('YT error:', err);
+      }
+    });
   </script>
 </body>
 </html>
